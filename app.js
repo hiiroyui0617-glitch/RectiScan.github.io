@@ -163,62 +163,161 @@ function unlockRectiScan() {
 lockRectiScan();
 
 // =============================================
-// PIN設定 / ロック解除ボタン
+// PIN設定 / ロック解除
+// =============================================
+
+// iPhone Safariでフォーム送信扱いにならないよう強制
+authButton.type = "button";
+
+function handleAuthButton(event) {
+
+    // フォーム送信・ページ再読み込みを防止
+    if (event) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+    }
+
+
+    const pin =
+        authPinInput.value.trim();
+
+
+    // =====================================
+    // PIN形式チェック
+    // =====================================
+
+    if (
+        !/^\d{4,8}$/.test(pin)
+    ) {
+
+        authError.textContent =
+            "4〜8桁の数字を入力してください。";
+
+        return;
+    }
+
+
+    // =====================================
+    // 初回PIN設定
+    // =====================================
+
+    if (isFirstPinSetup) {
+
+        try {
+
+            localStorage.setItem(
+                RECTISCAN_PIN_KEY,
+                pin
+            );
+
+        }
+        catch (error) {
+
+            console.error(
+                "PIN保存エラー:",
+                error
+            );
+
+            authError.textContent =
+                "PINを保存できませんでした。";
+
+            return;
+        }
+
+
+        // 保存確認
+        const savedPin =
+            localStorage.getItem(
+                RECTISCAN_PIN_KEY
+            );
+
+
+        if (
+            savedPin !== pin
+        ) {
+
+            authError.textContent =
+                "PINの保存に失敗しました。";
+
+            return;
+        }
+
+
+        isFirstPinSetup =
+            false;
+
+
+        // =================================
+        // 認証成功
+        // =================================
+
+        unlockRectiScan();
+
+
+        return;
+    }
+
+
+    // =====================================
+    // 通常のロック解除
+    // =====================================
+
+    const savedPin =
+        localStorage.getItem(
+            RECTISCAN_PIN_KEY
+        );
+
+
+    if (
+        pin === savedPin
+    ) {
+
+        unlockRectiScan();
+
+    }
+    else {
+
+        authError.textContent =
+            "PINが違います。";
+
+        authPinInput.value =
+            "";
+
+    }
+
+}
+
+
+// =============================================
+// ボタンタップ
 // =============================================
 
 authButton.addEventListener(
     "click",
-    function () {
-        const pin = authPinInput.value.trim();
+    handleAuthButton
+);
 
-        if ( !/^\d{4,8}$/.test(pin) ) {
-            authError.textContent = "4〜8桁の数字を入力してください。";
-            return;
+
+// =============================================
+// iPhoneキーボードの「完了」でも認証
+// =============================================
+
+authPinInput.addEventListener(
+    "keydown",
+    function (event) {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            handleAuthButton(
+                event
+            );
+
         }
 
-        // =====================================
-        // 初回PIN設定
-        // =====================================
-
-        if (isFirstPinSetup) {
-            try {
-                localStorage.setItem(
-                    RECTISCAN_PIN_KEY,
-                    pin
-                );
-            }
-            catch (error) {
-                console.error(
-                    "PIN保存エラー:",
-                    error
-                );
-                authError.textContent = "PINを保存できませんでした。";
-                return;
-            }
-            const savedPin = localStorage.getItem(RECTISCAN_PIN_KEY);
-
-            if (savedPin !== pin) {
-                authError.textContent = "PINの保存に失敗しました。";
-                return;
-            }
-            isFirstPinSetup = false;
-            unlockRectiScan();
-            return;
-        }
-
-        // =====================================
-        // 通常のロック解除
-        // =====================================
-
-        const savedPin = localStorage.getItem(RECTISCAN_PIN_KEY);
-
-        if (pin === savedPin) {
-            unlockRectiScan();
-        }
-        else {
-            authError.textContent = "PINが違います。";
-            authPinInput.value = "";
-        }
     }
 );
 

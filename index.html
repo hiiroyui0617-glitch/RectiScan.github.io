@@ -13,6 +13,7 @@
         認証画面だけは外部CSSが読み込めなくても
         必ず全画面表示させる
     -->
+    <!--
     <style>
 
         html,
@@ -92,6 +93,7 @@
                     appearance: none;
                 }
     </style>
+    -->
 </head>
 
 <body>
@@ -99,7 +101,7 @@
     <!-- =========================
      RectiScan 起動ロック
      ========================= -->
-
+    <!--
     <div id="authScreen"
          class="auth-screen"
          style="display:none !important;">
@@ -129,6 +131,7 @@
         </div>
 
     </div>
+    -->
 
     <header class="app-header">
 
@@ -141,134 +144,134 @@
     <main>
 
         <!-- 写真選択 -->
-        <section class="card">
+    <section class="card">
 
-            <h2>1. 写真を選択</h2>
+        <h2>1. 写真を選択</h2>
 
-            <label class="file-button">
-                写真を選択
-                <input type="file"
-                       id="imageInput"
-                       accept="image/*"
-                       multiple>
+        <label class="file-button">
+            写真を選択
+            <input type="file"
+                   id="imageInput"
+                   accept="image/*"
+                   multiple>
+        </label>
+
+        <!-- カメラ撮影 -->
+
+        <button id="openCameraButton"
+                class="camera-button"
+                type="button">
+            カメラで撮影
+        </button>
+
+        <p id="imageCount">
+            写真が選択されていません
+        </p>
+
+    </section>
+
+
+    <!-- 用紙サイズ -->
+    <section class="card">
+
+        <h2>2. PDF用紙サイズ</h2>
+
+        <div class="paper-options">
+
+            <label>
+                <input type="radio"
+                       name="paperSize"
+                       value="A4"
+                       checked>
+                A4
             </label>
 
-            <!-- カメラ撮影 -->
+            <label>
+                <input type="radio"
+                       name="paperSize"
+                       value="B5">
+                B5
+            </label>
 
-            <button id="openCameraButton"
-                    class="camera-button"
-                    type="button">
-                カメラで撮影
-            </button>
+        </div>
 
-            <p id="imageCount">
-                写真が選択されていません
+    </section>
+
+
+    <!-- プレビュー -->
+    <section class="card">
+
+        <h2>3. 選択した写真</h2>
+
+        <div id="previewContainer" class="preview-container">
+
+            <p id="emptyMessage">
+                写真を選択すると、ここに表示されます。
             </p>
 
-        </section>
+        </div>
 
+    </section>
 
-        <!-- 用紙サイズ -->
-        <section class="card">
+    <!-- 一括自動補正 -->
+    <section class="card">
 
-            <h2>2. PDF用紙サイズ</h2>
+        <h2>一括自動補正</h2>
 
-            <div class="paper-options">
+        <p>
+            未補正のページを自動で検出・補正し、
+            ドキュメントフィルターを適用します。
+        </p>
 
-                <label>
-                    <input type="radio"
-                           name="paperSize"
-                           value="A4"
-                           checked>
-                    A4
-                </label>
+        <button id="batchCorrectButton"
+                class="batch-correct-button"
+                disabled>
+            一括自動補正
+        </button>
 
-                <label>
-                    <input type="radio"
-                           name="paperSize"
-                           value="B5">
-                    B5
-                </label>
+        <p id="batchProgress"
+           class="batch-progress"></p>
 
-            </div>
+    </section>
 
-        </section>
+    <!-- PDF作成 -->
+    <section class="card">
 
+        <button id="createPdfButton"
+                class="create-button"
+                disabled>
+            PDFを作成
+        </button>
 
-        <!-- プレビュー -->
-        <section class="card">
+    </section>
+    <!-- PDFプレビュー -->
+    <section id="pdfResultSection"
+             class="card"
+             style="display: none;">
 
-            <h2>3. 選択した写真</h2>
+        <h2>4. PDFプレビュー</h2>
 
-            <div id="previewContainer" class="preview-container">
+        <iframe id="pdfPreview"
+                class="pdf-preview"></iframe>
 
-                <p id="emptyMessage">
-                    写真を選択すると、ここに表示されます。
-                </p>
+        <div class="save-area">
 
-            </div>
+            <label for="fileName">
+                ファイル名
+            </label>
 
-        </section>
+            <input type="text"
+                   id="fileName"
+                   value="document">
 
-        <!-- 一括自動補正 -->
-        <section class="card">
-
-            <h2>一括自動補正</h2>
-
-            <p>
-                未補正のページを自動で検出・補正し、
-                ドキュメントフィルターを適用します。
-            </p>
-
-            <button id="batchCorrectButton"
-                    class="batch-correct-button"
-                    disabled>
-                一括自動補正
+            <button id="savePdfButton"
+                    class="save-button">
+                PDFを保存
             </button>
 
-            <p id="batchProgress"
-               class="batch-progress"></p>
+        </div>
 
-        </section>
-
-        <!-- PDF作成 -->
-        <section class="card">
-
-            <button id="createPdfButton"
-                    class="create-button"
-                    disabled>
-                PDFを作成
-            </button>
-
-        </section>
-        <!-- PDFプレビュー -->
-        <section id="pdfResultSection"
-                 class="card"
-                 style="display: none;">
-
-            <h2>4. PDFプレビュー</h2>
-
-            <iframe id="pdfPreview"
-                    class="pdf-preview"></iframe>
-
-            <div class="save-area">
-
-                <label for="fileName">
-                    ファイル名
-                </label>
-
-                <input type="text"
-                       id="fileName"
-                       value="document">
-
-                <button id="savePdfButton"
-                        class="save-button">
-                    PDFを保存
-                </button>
-
-            </div>
-
-        </section>
+    </section>
 
     </main>
 
@@ -456,9 +459,9 @@
                 </span>
                 <div class="camera-top-actions">
                     <!--
-            フラッシュ非対応端末では
-            JavaScript側で非表示のまま
-        -->
+                        フラッシュ非対応端末では
+                        JavaScript側で非表示のまま
+                    -->
                     <button id="torchButton"
                             class="torch-button hidden"
                             type="button">

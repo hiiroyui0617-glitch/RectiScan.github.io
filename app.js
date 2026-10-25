@@ -37,6 +37,18 @@ const RECTISCAN_PIN_KEY = "rectiscan_pin";
 
 let isFirstPinSetup =!localStorage.getItem(RECTISCAN_PIN_KEY);
 
+// =============================================
+// RectiScanをロック状態に戻す
+// =============================================
+
+function lockRectiScan() {
+    authPinInput.value = "";
+    authError.textContent = "";
+    authMessage.textContent ="PINを入力してください";
+    authButton.textContent = "ロック解除";
+    authScreen.style.display = "flex";
+}
+
 // 初回起動
 if (isFirstPinSetup) {
     authMessage.textContent ="初回設定：4〜8桁のPINを設定してください";
@@ -46,57 +58,6 @@ else {
     authMessage.textContent ="PINを入力してください";
     authButton.textContent ="ロック解除";
 }
-
-authButton.addEventListener(
-    "click",
-    function () {
-        const pin =authPinInput.value.trim();
-
-        if (!/^\d{4,8}$/.test(pin)) {
-            authError.textContent =
-                "4〜8桁の数字を入力してください。";
-            return;
-        }
-
-        // =========================
-        // 初回
-        // =========================
-
-        if (isFirstPinSetup) {
-            localStorage.setItem(
-                RECTISCAN_PIN_KEY,
-                pin
-            );
-
-            isFirstPinSetup =false;
-            authScreen.style.display ="none";
-
-            return;
-        }
-
-        // =========================
-        // 通常起動
-        // =========================
-        const savedPin =
-            localStorage.getItem(
-                RECTISCAN_PIN_KEY
-            );
-        if (pin === savedPin) {
-            authError.textContent =
-                "";
-            authPinInput.value =
-                "";
-            authScreen.style.display =
-                "none";
-        }
-        else {
-            authError.textContent =
-                "PINが違います。";
-            authPinInput.value =
-                "";
-        }
-    }
-);
 
 // =============================================
 // ページ情報
@@ -110,7 +71,6 @@ authButton.addEventListener(
 //
 
 let pages = [];
-
 
 // =============================================
 // PDF関係
@@ -256,6 +216,55 @@ async function startRectiScanCamera() {
 
     try {
 
+        // =====================================
+        // iPhoneでは先にカメラ画面を表示する
+        // =====================================
+
+        cameraModal.classList.remove(
+            "hidden"
+        );
+
+
+        cameraCount.textContent =
+            "カメラを準備しています...";
+
+
+        // =====================================
+        // videoをiOS向けに明示設定
+        // =====================================
+
+        cameraVideo.muted = true;
+
+        cameraVideo.playsInline = true;
+
+        cameraVideo.setAttribute(
+            "playsinline",
+            ""
+        );
+
+
+        // =====================================
+        // 以前のカメラが残っていたら停止
+        // =====================================
+
+        if (cameraStream) {
+
+            cameraStream
+                .getTracks()
+                .forEach(
+                    function (track) {
+                        track.stop();
+                    }
+                );
+
+            cameraStream = null;
+        }
+
+
+        // =====================================
+        // カメラ取得
+        // =====================================
+
         cameraStream =
             await navigator.mediaDevices
                 .getUserMedia({
@@ -266,14 +275,6 @@ async function startRectiScanCamera() {
 
                         facingMode: {
                             ideal: "environment"
-                        },
-
-                        width: {
-                            ideal: 2560
-                        },
-
-                        height: {
-                            ideal: 1920
                         }
 
                     }
@@ -285,18 +286,44 @@ async function startRectiScanCamera() {
             cameraStream;
 
 
+        // =====================================
+        // 映像サイズが確定するまで待つ
+        // =====================================
+
+        if (
+            cameraVideo.readyState < 1
+        ) {
+
+            await new Promise(
+                function (resolve) {
+
+                    cameraVideo.addEventListener(
+                        "loadedmetadata",
+                        resolve,
+                        {
+                            once: true
+                        }
+                    );
+
+                }
+            );
+
+        }
+
+
+        // =====================================
+        // iPhoneで再生開始
+        // =====================================
+
         await cameraVideo.play();
 
 
         currentCameraCaptureCount = 0;
 
+
         cameraCount.textContent =
             "撮影済み 0枚";
 
-
-        cameraModal.classList.remove(
-            "hidden"
-        );
 
     }
     catch (error) {
@@ -306,8 +333,27 @@ async function startRectiScanCamera() {
             error
         );
 
+
+        stopRectiScanCamera();
+
+
+        let message =
+            "カメラを起動できませんでした。";
+
+
+        if (
+            error.name ===
+            "NotAllowedError"
+        ) {
+
+            message +=
+                "\nSafariのカメラ使用を許可してください。";
+
+        }
+
+
         alert(
-            "カメラを起動できませんでした。\nSafariのカメラ権限を確認してください。"
+            message
         );
 
     }
@@ -346,6 +392,37 @@ function stopRectiScanCamera() {
 
 }
 
+// =============================================
+// iPhone / Safari
+// アプリを離れたらロック
+// =============================================
+
+document.addEventListener(
+    "visibilitychange",
+    function () {
+        if (document.visibilityState === "hidden"){
+            // カメラ使用中なら停止
+            if (cameraStream) {
+                stopRectiScanCamera();
+            }
+            // RectiScanをロック
+            lockRectiScan();
+        }
+    }
+);
+
+// =============================================
+// Safariのページ復元時にも再ロック
+// =============================================
+
+window.addEventListener(
+    "pageshow",
+    function (event) {
+        if (event.persisted) {
+            lockRectiScan();
+        }
+    }
+);
 
 // =============================================
 // 撮影
@@ -353,17 +430,27 @@ function stopRectiScanCamera() {
 
 async function captureCameraFrame() {
 
+    // =====================================
+    // カメラ映像がまだ準備できていない
+    // =====================================
+
     if (
-        !cameraVideo.videoWidth ||
-        !cameraVideo.videoHeight
+        !cameraStream ||
+        cameraVideo.readyState < 2 ||
+        cameraVideo.videoWidth === 0 ||
+        cameraVideo.videoHeight === 0
     ) {
 
-        return;
+        alert(
+            "カメラ映像を準備中です。\n少し待ってから撮影してください。"
+        );
 
+        return;
     }
 
 
-    shutterButton.disabled = true;
+    shutterButton.disabled =
+        true;
 
 
     try {
@@ -371,11 +458,19 @@ async function captureCameraFrame() {
         const canvas =
             cameraCaptureCanvas;
 
+
         const context =
             canvas.getContext(
-                "2d"
+                "2d",
+                {
+                    alpha: false
+                }
             );
 
+
+        // =====================================
+        // 実際のカメラ解像度をそのまま使用
+        // =====================================
 
         canvas.width =
             cameraVideo.videoWidth;
@@ -393,13 +488,41 @@ async function captureCameraFrame() {
         );
 
 
+        // =====================================
+        // JPEG化
+        // =====================================
+
         const blob =
             await new Promise(
-                function (resolve) {
+                function (
+                    resolve,
+                    reject
+                ) {
 
                     canvas.toBlob(
-                        resolve,
+                        function (result) {
+
+                            if (result) {
+
+                                resolve(
+                                    result
+                                );
+
+                            }
+                            else {
+
+                                reject(
+                                    new Error(
+                                        "JPEG生成失敗"
+                                    )
+                                );
+
+                            }
+
+                        },
+
                         "image/jpeg",
+
                         0.95
                     );
 
@@ -407,52 +530,31 @@ async function captureCameraFrame() {
             );
 
 
-        if (!blob) {
-
-            throw new Error(
-                "画像を作成できませんでした。"
-            );
-
-        }
-
-
-        const now =
-            new Date();
-
-        const fileName =
-            "RectiScan_" +
-            now.getFullYear() +
-            String(
-                now.getMonth() + 1
-            ).padStart(2, "0") +
-            String(
-                now.getDate()
-            ).padStart(2, "0") +
-            "_" +
-            String(
-                now.getHours()
-            ).padStart(2, "0") +
-            String(
-                now.getMinutes()
-            ).padStart(2, "0") +
-            String(
-                now.getSeconds()
-            ).padStart(2, "0") +
-            ".jpg";
-
+        // =====================================
+        // File作成
+        // =====================================
 
         const file =
             new File(
+
                 [blob],
-                fileName,
+
+                "RectiScan_" +
+                Date.now() +
+                ".jpg",
+
                 {
                     type:
                         "image/jpeg"
                 }
+
             );
 
 
-        // 既存ページを消さず追加
+        // =====================================
+        // 既存ページへ追加
+        // =====================================
+
         pages.push(
             createPageData(
                 file
@@ -472,8 +574,9 @@ async function captureCameraFrame() {
         invalidateGeneratedPdf();
 
 
-        // ★カメラは終了しない
-        // そのまま次の紙を撮影可能
+        // ★ここでカメラを停止しない
+        // ★modalも閉じない
+        // ★showPreviews()もしない
 
     }
     catch (error) {
@@ -483,8 +586,9 @@ async function captureCameraFrame() {
             error
         );
 
+
         alert(
-            "撮影に失敗しました。"
+            "写真の保存に失敗しました。"
         );
 
     }

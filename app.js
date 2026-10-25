@@ -40,12 +40,35 @@ let isFirstPinSetup =!localStorage.getItem(RECTISCAN_PIN_KEY);
 // =============================================
 // RectiScanをロック状態に戻す
 // =============================================
-
 function lockRectiScan() {
     authPinInput.value = "";
     authError.textContent = "";
-    authMessage.textContent ="PINを入力してください";
-    authButton.textContent = "ロック解除";
+
+    // =====================================
+    // 現在PINが設定されているか
+    // 毎回localStorageから確認
+    // =====================================
+
+    const savedPin = localStorage.getItem( RECTISCAN_PIN_KEY );
+    isFirstPinSetup = !savedPin;
+
+    // =====================================
+    // PIN未設定
+    // =====================================
+
+    if (isFirstPinSetup) {
+        authMessage.textContent = "初回設定：4〜8桁のPINを設定してください";
+        authButton.textContent = "PINを設定して開始";
+    }
+
+    // =====================================
+    // PIN設定済み
+    // =====================================
+
+    else {
+        authMessage.textContent = "PINを入力してください";
+        authButton.textContent = "ロック解除";
+    }
     authScreen.style.display = "flex";
 }
 

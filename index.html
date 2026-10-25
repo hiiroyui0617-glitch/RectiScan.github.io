@@ -11,6 +11,38 @@
 
 <body>
 
+    <!-- =========================
+     RectiScan 起動ロック
+     ========================= -->
+
+    <div id="authScreen" class="auth-screen">
+
+        <div class="auth-card">
+
+            <h1>RectiScan</h1>
+
+            <p id="authMessage">
+                PINを入力してください
+            </p>
+
+            <input id="authPinInput"
+                   type="password"
+                   inputmode="numeric"
+                   maxlength="8"
+                   placeholder="PIN">
+
+            <button id="authButton"
+                    type="button">
+                ロック解除
+            </button>
+
+            <p id="authError"
+               class="auth-error"></p>
+
+        </div>
+
+    </div>
+
     <header class="app-header">
 
         <img src="アイコン.png"
@@ -36,16 +68,11 @@
 
             <!-- カメラ撮影 -->
 
-            <label class="camera-button">
-
+            <button id="openCameraButton"
+                    class="camera-button"
+                    type="button">
                 カメラで撮影
-
-                <input type="file"
-                       id="cameraInput"
-                       accept="image/*"
-                       capture="environment">
-
-            </label>
+            </button>
 
             <p id="imageCount">
                 写真が選択されていません
@@ -324,6 +351,46 @@
     </script>
 
     <script src="app.js"></script>
+
+    <!-- =========================
+     連続撮影カメラ
+     ========================= -->
+
+    <div id="cameraModal" class="camera-modal hidden">
+
+        <div class="camera-screen">
+
+            <video id="cameraVideo"
+                   autoplay
+                   playsinline
+                   muted></video>
+
+            <div class="camera-top-bar">
+                <span id="cameraCount">
+                    撮影済み 0枚
+                </span>
+
+                <button id="cameraDoneButton"
+                        type="button">
+                    完了
+                </button>
+            </div>
+
+            <div class="camera-bottom-bar">
+
+                <button id="shutterButton"
+                        class="shutter-button"
+                        type="button"
+                        aria-label="撮影"></button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <canvas id="cameraCaptureCanvas"
+            style="display:none;"></canvas>
 
 </body>
 </html>

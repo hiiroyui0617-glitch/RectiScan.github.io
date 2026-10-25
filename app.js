@@ -2,66 +2,101 @@
 // HTML要素
 // =============================================
 
-const imageInput =
-    document.getElementById("imageInput");
-
-const cameraInput =
-    document.getElementById("cameraInput");
-
-const previewContainer =
-    document.getElementById("previewContainer");
-
-const batchCorrectButton =
-    document.getElementById("batchCorrectButton");
-
-const batchProgress =
-    document.getElementById("batchProgress");
-
-const imageCount =
-    document.getElementById("imageCount");
-
-const createPdfButton =
-    document.getElementById("createPdfButton");
-
-const pdfResultSection =
-    document.getElementById("pdfResultSection");
-
-const pdfPreview =
-    document.getElementById("pdfPreview");
-
-const savePdfButton =
-    document.getElementById("savePdfButton");
-
-const fileNameInput =
-    document.getElementById("fileName");
-
+const imageInput = document.getElementById("imageInput");
+const previewContainer = document.getElementById("previewContainer");
+const batchCorrectButton = document.getElementById("batchCorrectButton");
+const batchProgress = document.getElementById("batchProgress");
+const imageCount = document.getElementById("imageCount");
+const createPdfButton = document.getElementById("createPdfButton");
+const pdfResultSection = document.getElementById("pdfResultSection");
+const pdfPreview = document.getElementById("pdfPreview");
+const savePdfButton = document.getElementById("savePdfButton");
+const fileNameInput = document.getElementById("fileName");
 
 // 四隅補正関係
 
-const cropModal =
-    document.getElementById("cropModal");
+const cropModal = document.getElementById("cropModal");
+const cropCanvas = document.getElementById("cropCanvas");
+const cropStatus = document.getElementById("cropStatus");
+const cropFilterMode = document.getElementById("cropFilterMode");
+const autoDetectCropButton = document.getElementById("autoDetectCropButton");
+const resetCropButton = document.getElementById("resetCropButton");
+const cancelCropButton =document.getElementById("cancelCropButton");
+const applyCropButton = document.getElementById("applyCropButton");
 
-const cropCanvas =
-    document.getElementById("cropCanvas");
+// =============================================
+// RectiScan PIN認証
+// =============================================
 
-const cropStatus =
-    document.getElementById("cropStatus");
+const authScreen = document.getElementById("authScreen");
+const authPinInput = document.getElementById("authPinInput");
+const authButton = document.getElementById("authButton");
+const authMessage = document.getElementById("authMessage");
+const authError = document.getElementById("authError");
+const RECTISCAN_PIN_KEY = "rectiscan_pin";
 
-const cropFilterMode =
-    document.getElementById("cropFilterMode");
+let isFirstPinSetup =!localStorage.getItem(RECTISCAN_PIN_KEY);
 
-const autoDetectCropButton =
-    document.getElementById("autoDetectCropButton");
+// 初回起動
+if (isFirstPinSetup) {
+    authMessage.textContent ="初回設定：4〜8桁のPINを設定してください";
+    authButton.textContent ="PINを設定して開始";
+}
+else {
+    authMessage.textContent ="PINを入力してください";
+    authButton.textContent ="ロック解除";
+}
 
-const resetCropButton =
-    document.getElementById("resetCropButton");
+authButton.addEventListener(
+    "click",
+    function () {
+        const pin =authPinInput.value.trim();
 
-const cancelCropButton =
-    document.getElementById("cancelCropButton");
+        if (!/^\d{4,8}$/.test(pin)) {
+            authError.textContent =
+                "4〜8桁の数字を入力してください。";
+            return;
+        }
 
-const applyCropButton =
-    document.getElementById("applyCropButton");
+        // =========================
+        // 初回
+        // =========================
 
+        if (isFirstPinSetup) {
+            localStorage.setItem(
+                RECTISCAN_PIN_KEY,
+                pin
+            );
+
+            isFirstPinSetup =false;
+            authScreen.style.display ="none";
+
+            return;
+        }
+
+        // =========================
+        // 通常起動
+        // =========================
+        const savedPin =
+            localStorage.getItem(
+                RECTISCAN_PIN_KEY
+            );
+        if (pin === savedPin) {
+            authError.textContent =
+                "";
+            authPinInput.value =
+                "";
+            authScreen.style.display =
+                "none";
+        }
+        else {
+            authError.textContent =
+                "PINが違います。";
+            authPinInput.value =
+                "";
+        }
+    }
+);
 
 // =============================================
 // ページ情報
@@ -170,37 +205,323 @@ imageInput.addEventListener(
 );
 
 // =============================================
-// カメラで撮影
-//
-// 撮影した画像は既存ページの末尾へ追加
+// RectiScan 連続撮影カメラ
 // =============================================
 
-cameraInput.addEventListener(
-    "change",
-    function (event) {
-        const files =
-            Array.from(event.target.files);
+const openCameraButton =
+    document.getElementById(
+        "openCameraButton"
+    );
 
-        if (files.length === 0)
-        {
-            return;
-        }
-        files.forEach(
-            function (file) {
-                pages.push(
-                    createPageData(file)
-                );
-            }
+const cameraModal =
+    document.getElementById(
+        "cameraModal"
+    );
+
+const cameraVideo =
+    document.getElementById(
+        "cameraVideo"
+    );
+
+const cameraCaptureCanvas =
+    document.getElementById(
+        "cameraCaptureCanvas"
+    );
+
+const shutterButton =
+    document.getElementById(
+        "shutterButton"
+    );
+
+const cameraDoneButton =
+    document.getElementById(
+        "cameraDoneButton"
+    );
+
+const cameraCount =
+    document.getElementById(
+        "cameraCount"
+    );
+
+
+let cameraStream = null;
+let currentCameraCaptureCount = 0;
+
+
+// =============================================
+// カメラ開始
+// =============================================
+
+async function startRectiScanCamera() {
+
+    try {
+
+        cameraStream =
+            await navigator.mediaDevices
+                .getUserMedia({
+
+                    audio: false,
+
+                    video: {
+
+                        facingMode: {
+                            ideal: "environment"
+                        },
+
+                        width: {
+                            ideal: 2560
+                        },
+
+                        height: {
+                            ideal: 1920
+                        }
+
+                    }
+
+                });
+
+
+        cameraVideo.srcObject =
+            cameraStream;
+
+
+        await cameraVideo.play();
+
+
+        currentCameraCaptureCount = 0;
+
+        cameraCount.textContent =
+            "撮影済み 0枚";
+
+
+        cameraModal.classList.remove(
+            "hidden"
         );
-        // PDFは作り直す必要がある
+
+    }
+    catch (error) {
+
+        console.error(
+            "カメラ起動エラー:",
+            error
+        );
+
+        alert(
+            "カメラを起動できませんでした。\nSafariのカメラ権限を確認してください。"
+        );
+
+    }
+
+}
+
+
+// =============================================
+// カメラ終了
+// =============================================
+
+function stopRectiScanCamera() {
+
+    if (cameraStream) {
+
+        cameraStream
+            .getTracks()
+            .forEach(
+                function (track) {
+
+                    track.stop();
+
+                }
+            );
+
+    }
+
+
+    cameraStream = null;
+
+    cameraVideo.srcObject = null;
+
+    cameraModal.classList.add(
+        "hidden"
+    );
+
+}
+
+
+// =============================================
+// 撮影
+// =============================================
+
+async function captureCameraFrame() {
+
+    if (
+        !cameraVideo.videoWidth ||
+        !cameraVideo.videoHeight
+    ) {
+
+        return;
+
+    }
+
+
+    shutterButton.disabled = true;
+
+
+    try {
+
+        const canvas =
+            cameraCaptureCanvas;
+
+        const context =
+            canvas.getContext(
+                "2d"
+            );
+
+
+        canvas.width =
+            cameraVideo.videoWidth;
+
+        canvas.height =
+            cameraVideo.videoHeight;
+
+
+        context.drawImage(
+            cameraVideo,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+
+        const blob =
+            await new Promise(
+                function (resolve) {
+
+                    canvas.toBlob(
+                        resolve,
+                        "image/jpeg",
+                        0.95
+                    );
+
+                }
+            );
+
+
+        if (!blob) {
+
+            throw new Error(
+                "画像を作成できませんでした。"
+            );
+
+        }
+
+
+        const now =
+            new Date();
+
+        const fileName =
+            "RectiScan_" +
+            now.getFullYear() +
+            String(
+                now.getMonth() + 1
+            ).padStart(2, "0") +
+            String(
+                now.getDate()
+            ).padStart(2, "0") +
+            "_" +
+            String(
+                now.getHours()
+            ).padStart(2, "0") +
+            String(
+                now.getMinutes()
+            ).padStart(2, "0") +
+            String(
+                now.getSeconds()
+            ).padStart(2, "0") +
+            ".jpg";
+
+
+        const file =
+            new File(
+                [blob],
+                fileName,
+                {
+                    type:
+                        "image/jpeg"
+                }
+            );
+
+
+        // 既存ページを消さず追加
+        pages.push(
+            createPageData(
+                file
+            )
+        );
+
+
+        currentCameraCaptureCount++;
+
+
+        cameraCount.textContent =
+            "撮影済み " +
+            currentCameraCaptureCount +
+            "枚";
+
+
         invalidateGeneratedPdf();
 
-        // プレビュー更新
+
+        // ★カメラは終了しない
+        // そのまま次の紙を撮影可能
+
+    }
+    catch (error) {
+
+        console.error(
+            "撮影エラー:",
+            error
+        );
+
+        alert(
+            "撮影に失敗しました。"
+        );
+
+    }
+    finally {
+
+        shutterButton.disabled =
+            false;
+
+    }
+
+}
+
+
+// =============================================
+// ボタン
+// =============================================
+
+openCameraButton.addEventListener(
+    "click",
+    startRectiScanCamera
+);
+
+
+shutterButton.addEventListener(
+    "click",
+    captureCameraFrame
+);
+
+
+cameraDoneButton.addEventListener(
+    "click",
+    function () {
+
+        stopRectiScanCamera();
+
         showPreviews();
 
-        // 同じカメラ入力を
-        // もう一度使用できるようにする
-        cameraInput.value = "";
     }
 );
 
@@ -6497,17 +6818,16 @@ createPdfButton.addEventListener(
 
 savePdfButton.addEventListener(
     "click",
-    function () {
+    async function () {
 
-        if (
-            generatedPdfBlob === null
-        ) {
+        if (!generatedPdfBlob) {
 
             alert(
                 "先にPDFを作成してください。"
             );
 
             return;
+
         }
 
 
@@ -6515,12 +6835,11 @@ savePdfButton.addEventListener(
             fileNameInput.value.trim();
 
 
-        if (
-            fileName === ""
-        ) {
+        if (!fileName) {
 
             fileName =
-                "document";
+                "RectiScan";
+
         }
 
 
@@ -6530,12 +6849,76 @@ savePdfButton.addEventListener(
                 .endsWith(".pdf")
         ) {
 
-            fileName +=
-                ".pdf";
+            fileName += ".pdf";
+
         }
 
 
-        const downloadUrl =
+        const pdfFile =
+            new File(
+                [generatedPdfBlob],
+                fileName,
+                {
+                    type:
+                        "application/pdf"
+                }
+            );
+
+
+        // =========================
+        // iPhone等
+        // =========================
+
+        if (
+            navigator.canShare &&
+            navigator.canShare({
+                files: [pdfFile]
+            })
+        ) {
+
+            try {
+
+                await navigator.share({
+
+                    files: [
+                        pdfFile
+                    ],
+
+                    title:
+                        fileName
+
+                });
+
+
+                return;
+
+            }
+            catch (error) {
+
+                if (
+                    error.name ===
+                    "AbortError"
+                ) {
+
+                    return;
+
+                }
+
+
+                console.error(
+                    error
+                );
+
+            }
+
+        }
+
+
+        // =========================
+        // PC等へのフォールバック
+        // =========================
+
+        const url =
             URL.createObjectURL(
                 generatedPdfBlob
             );
@@ -6548,7 +6931,7 @@ savePdfButton.addEventListener(
 
 
         link.href =
-            downloadUrl;
+            url;
 
         link.download =
             fileName;
@@ -6562,20 +6945,19 @@ savePdfButton.addEventListener(
         link.click();
 
 
-        document.body.removeChild(
-            link
-        );
+        link.remove();
 
 
         setTimeout(
             function () {
 
                 URL.revokeObjectURL(
-                    downloadUrl
+                    url
                 );
 
             },
             1000
         );
+
     }
 );

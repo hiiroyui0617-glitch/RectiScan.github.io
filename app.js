@@ -412,8 +412,207 @@ const cameraCount =
     );
 
 
+// =============================================
+// カメラライト
+// =============================================
+
+const torchButton =
+    document.getElementById(
+        "torchButton"
+    );
+
+
 let cameraStream = null;
+
 let currentCameraCaptureCount = 0;
+
+
+// iPhone Safari対策
+let cameraStarting = false;
+
+let cameraActive = false;
+
+
+// =============================================
+// ライト状態
+// =============================================
+
+let torchSupported = false;
+let torchEnabled = false;
+
+// =============================================
+// カメラライト対応確認
+// =============================================
+
+function setupTorchControl() {
+
+    torchSupported = false;
+
+    torchEnabled = false;
+
+
+    torchButton.classList.add(
+        "hidden"
+    );
+
+
+    torchButton.classList.remove(
+        "active"
+    );
+
+
+    torchButton.textContent =
+        "ライト OFF";
+
+
+    if (!cameraStream) {
+
+        return;
+
+    }
+
+
+    const tracks =
+        cameraStream.getVideoTracks();
+
+
+    if (
+        !tracks ||
+        tracks.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    const track =
+        tracks[0];
+
+
+    // applyConstraintsが無ければ使用不可
+    if (
+        typeof track.applyConstraints !==
+        "function"
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        // =====================================
+        // カメラがtorch対応か確認
+        // =====================================
+
+        if (
+            typeof track.getCapabilities ===
+            "function"
+        ) {
+
+            const capabilities =
+                track.getCapabilities();
+
+
+            if (
+                capabilities &&
+                capabilities.torch === true
+            ) {
+
+                torchSupported =
+                    true;
+
+            }
+
+        }
+
+    }
+    catch (error) {
+
+        console.warn(
+            "ライト対応確認:",
+            error
+        );
+
+    }
+
+
+    // =====================================
+    // 対応端末だけボタンを表示
+    // =====================================
+
+    if (torchSupported) {
+
+        torchButton.classList.remove(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+// =============================================
+// ライトON / OFF
+// =============================================
+
+async function setCameraTorch(
+    enabled
+) {
+    if (
+        !cameraStream ||
+        !torchSupported
+    ) {
+        return;
+    }
+
+    const track =cameraStream.getVideoTracks()[0];
+
+    if (!track) {
+        return;
+    }
+
+    try { 
+        // =====================================
+        // 標準的なtorch制約
+        // =====================================
+
+        try {
+            await track.applyConstraints({
+                torch: enabled});
+        }
+        catch (firstError) {
+            // 一部ブラウザ用フォールバック
+            await track.applyConstraints({
+                advanced: [{torch: enabled}]
+            });
+        }
+        torchEnabled = enabled;
+
+        if (torchEnabled) {
+            torchButton.textContent = "ライト ON";
+            torchButton.classList.add("active");
+        }
+        else {
+            torchButton.textContent = "ライト OFF";
+            torchButton.classList.remove( "active" );
+        }
+    }
+    catch (error) {
+        console.error(
+            "ライト切替エラー:",
+            error
+        );
+
+        alert("この端末ではカメラライトを制御できません。");
+
+        torchSupported = false;
+        torchEnabled = false;
+        torchButton.classList.add("hidden");
+    }
+}
 
 // iPhone Safari対策
 let cameraStarting = false;
@@ -535,6 +734,7 @@ async function startRectiScanCamera() {
         cameraStream = stream;
         cameraVideo.srcObject = stream;
         cameraActive = true;
+        setupTorchControl();
 
         // =====================================
         // video.play()は
@@ -563,32 +763,29 @@ async function startRectiScanCamera() {
 // =============================================
 // カメラ終了
 // =============================================
-
 function stopRectiScanCamera() {
-
     if (cameraStream) {
-
         cameraStream
             .getTracks()
             .forEach(
                 function (track) {
-
                     track.stop();
-
                 }
             );
-
     }
-
-
     cameraStream = null;
+    cameraActive = false;
 
+    // =====================================
+    // ライト状態をリセット
+    // =====================================
+    torchEnabled = false;
+    torchSupported = false;
+    torchButton.textContent = "ライト OFF";
+    torchButton.classList.remove( "active" );
+    torchButton.classList.add( "hidden" );
     cameraVideo.srcObject = null;
-
-    cameraModal.classList.add(
-        "hidden"
-    );
-
+    cameraModal.classList.add( "hidden" );
 }
 
 // =============================================
@@ -847,6 +1044,16 @@ openCameraButton.addEventListener(
     startRectiScanCamera
 );
 
+torchButton.addEventListener(
+    "click",
+    async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        await setCameraTorch(
+            !torchEnabled
+        );
+    }
+);
 
 shutterButton.addEventListener(
     "click",

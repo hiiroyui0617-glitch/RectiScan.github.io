@@ -452,11 +452,21 @@
                 <span id="cameraCount">
                     撮影済み 0枚
                 </span>
-
-                <button id="cameraDoneButton"
-                        type="button">
-                    完了
-                </button>
+                <div class="camera-top-actions">
+                    <!--
+            フラッシュ非対応端末では
+            JavaScript側で非表示のまま
+        -->
+                    <button id="torchButton"
+                            class="torch-button hidden"
+                            type="button">
+                        ライト OFF
+                    </button>
+                    <button id="cameraDoneButton"
+                            type="button">
+                        完了
+                    </button>
+                </div>
             </div>
 
             <div class="camera-bottom-bar">

@@ -808,3 +808,51 @@ body.modal-open {
     .shutter-button:active {
         transform: scale(0.92);
     }
+
+/* =========================
+   カメラ ライト
+   ========================= */
+
+.camera-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+/* ライトOFF */
+.camera-top-bar .torch-button {
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    padding: 10px 14px;
+    border-radius: 20px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+
+    /* ライトON */
+    .camera-top-bar .torch-button.active {
+        background: #ffd60a;
+        color: #111;
+        border-color: #ffd60a;
+    }
+
+
+/* スマホ */
+@media (max-width: 600px) {
+
+    .camera-top-bar {
+        gap: 8px;
+    }
+
+    .camera-top-actions {
+        gap: 7px;
+    }
+
+    .camera-top-bar .torch-button {
+        padding: 9px 11px;
+        font-size: 13px;
+    }
+}

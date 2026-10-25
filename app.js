@@ -28,6 +28,7 @@ const applyCropButton = document.getElementById("applyCropButton");
 // RectiScan PIN認証
 // =============================================
 
+/* 
 const authScreen = document.getElementById("authScreen");
 const authPinInput = document.getElementById("authPinInput");
 const authButton = document.getElementById("authButton");
@@ -266,6 +267,7 @@ authPinInput.addEventListener(
 
     }
 );
+*/
 
 // =============================================
 // ページ情報

@@ -446,14 +446,8 @@ let torchEnabled = false;
 
 function setupTorchControl() {
 
-    torchSupported = false;
-
     torchEnabled = false;
-
-
-    torchButton.classList.add(
-        "hidden"
-    );
+    torchSupported = false;
 
 
     torchButton.classList.remove(
@@ -467,8 +461,11 @@ function setupTorchControl() {
 
     if (!cameraStream) {
 
-        return;
+        torchButton.classList.add(
+            "hidden"
+        );
 
+        return;
     }
 
 
@@ -481,8 +478,11 @@ function setupTorchControl() {
         tracks.length === 0
     ) {
 
-        return;
+        torchButton.classList.add(
+            "hidden"
+        );
 
+        return;
     }
 
 
@@ -490,41 +490,63 @@ function setupTorchControl() {
         tracks[0];
 
 
-    // applyConstraintsが無ければ使用不可
-    if (
-        typeof track.applyConstraints !==
-        "function"
-    ) {
+    // =====================================
+    // PCでは従来どおりライトを表示しない
+    // スマホ・タッチ端末だけ対象
+    // =====================================
+
+    const isMobileDevice =
+        /iPhone|iPad|iPod|Android/i
+            .test(
+                navigator.userAgent
+            )
+        ||
+        (
+            window.matchMedia &&
+            window.matchMedia(
+                "(pointer: coarse)"
+            ).matches
+        );
+
+
+    if (!isMobileDevice) {
+
+        torchButton.classList.add(
+            "hidden"
+        );
 
         return;
-
     }
 
 
-    try {
+    // =====================================
+    // デバッグ用
+    // =====================================
 
-        // =====================================
-        // カメラがtorch対応か確認
-        // =====================================
+    try {
 
         if (
             typeof track.getCapabilities ===
             "function"
         ) {
 
-            const capabilities =
-                track.getCapabilities();
+            console.log(
+                "Camera capabilities:",
+                track.getCapabilities()
+            );
+
+        }
 
 
-            if (
-                capabilities &&
-                capabilities.torch === true
-            ) {
+        if (
+            typeof track.getSettings ===
+            "function"
+        ) {
 
-                torchSupported =
-                    true;
-
-            }
+            console.log(
+                "Camera settings:",
+                track.getSettings()
+            );
 
         }
 
@@ -532,7 +554,7 @@ function setupTorchControl() {
     catch (error) {
 
         console.warn(
-            "ライト対応確認:",
+            "カメラ情報取得:",
             error
         );
 
@@ -540,12 +562,39 @@ function setupTorchControl() {
 
 
     // =====================================
-    // 対応端末だけボタンを表示
+    // 重要
+    //
+    // getCapabilities().torch だけで
+    // ボタン表示を決めない。
+    //
+    // iPhoneでは実際にapplyConstraintsを
+    // 試して判断する。
     // =====================================
 
-    if (torchSupported) {
+    if (
+        typeof track.applyConstraints ===
+        "function"
+    ) {
+
+        torchSupported = true;
+
 
         torchButton.classList.remove(
+            "hidden"
+        );
+
+
+        torchButton.disabled =
+            false;
+
+
+        torchButton.textContent =
+            "ライト OFF";
+
+    }
+    else {
+
+        torchButton.classList.add(
             "hidden"
         );
 
@@ -561,16 +610,21 @@ function setupTorchControl() {
 async function setCameraTorch(
     enabled
 ) {
-    if (
-        !cameraStream ||
-        !torchSupported
-    ) {
+    if (!cameraStream) {
         return;
     }
 
-    const track =cameraStream.getVideoTracks()[0];
+    const track = cameraStream.getVideoTracks()[0];
 
-    if (!track) {
+    if (!track || tracks.length === 0) {
+        return;
+    }
+
+    const track = tracks[0];
+
+    if (typeof track.applyConstraints !== "function") {
+        torchButton.textContent = "ライト非対応";
+        torchButton.disabled = true;
         return;
     }
 
@@ -583,12 +637,12 @@ async function setCameraTorch(
             await track.applyConstraints({
                 torch: enabled});
         }
-        catch (firstError) {
+        catch (advancedError) {
             // 一部ブラウザ用フォールバック
-            await track.applyConstraints({
-                advanced: [{torch: enabled}]
-            });
+            console.warn("advanced torch失敗:", advanceError);
+            await track.applyConstraints({ torch: enabled });
         }
+        torchSupported = true;
         torchEnabled = enabled;
 
         if (torchEnabled) {
@@ -599,7 +653,12 @@ async function setCameraTorch(
             torchButton.textContent = "ライト OFF";
             torchButton.classList.remove( "active" );
         }
+        try {
+            console.log("Torch settings:", track.getSettings());
+        }
+        catch (error) { }
     }
+
     catch (error) {
         console.error(
             "ライト切替エラー:",

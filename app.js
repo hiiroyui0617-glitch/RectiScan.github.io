@@ -207,6 +207,9 @@ const cameraCount =
 let cameraStream = null;
 let currentCameraCaptureCount = 0;
 
+// iPhone Safari対策
+let cameraStarting = false;
+let cameraActive = false;
 
 // =============================================
 // カメラ開始
@@ -214,41 +217,65 @@ let currentCameraCaptureCount = 0;
 
 async function startRectiScanCamera() {
 
+    // 二重起動防止
+    if (cameraStarting) {
+        return;
+    }
+    cameraStarting = true;
+
+    // =====================================
+    // 先にカメラ画面を表示
+    // =====================================
+
+    cameraModal.classList.remove("hidden");
+    cameraCount.textContent = "カメラを準備しています...";
+
     try {
+        // =====================================
+        // HTTPS確認
+        // =====================================
+
+        if (!window.isSecureContext) {
+            throw new Error("HTTPSではありません。");
+        }
 
         // =====================================
-        // iPhoneでは先にカメラ画面を表示する
+        // getUserMedia対応確認
         // =====================================
 
-        cameraModal.classList.remove(
-            "hidden"
-        );
-
-
-        cameraCount.textContent =
-            "カメラを準備しています...";
-
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+            throw new Error("このブラウザではカメラAPIを利用できません。");
+        }
 
         // =====================================
-        // videoをiOS向けに明示設定
+        // iPhone Safari向けvideo設定
         // =====================================
 
         cameraVideo.muted = true;
-
+        cameraVideo.autoplay = true;
         cameraVideo.playsInline = true;
 
         cameraVideo.setAttribute(
             "playsinline",
             ""
         );
-
+        cameraVideo.setAttribute(
+            "muted",
+            ""
+        );
+        cameraVideo.setAttribute(
+            "autoplay",
+            ""
+        );
 
         // =====================================
-        // 以前のカメラが残っていたら停止
+        // 既存カメラを停止
         // =====================================
 
         if (cameraStream) {
-
             cameraStream
                 .getTracks()
                 .forEach(
@@ -256,110 +283,74 @@ async function startRectiScanCamera() {
                         track.stop();
                     }
                 );
-
             cameraStream = null;
         }
 
-
         // =====================================
-        // カメラ取得
+        // カメラそのものを取得
+        //
+        // ここだけ別tryにする
         // =====================================
 
-        cameraStream =
-            await navigator.mediaDevices
-                .getUserMedia({
-
-                    audio: false,
-
-                    video: {
-
-                        facingMode: {
-                            ideal: "environment"
+        let stream;
+        try {
+            stream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+                        audio: false,
+                        video: {
+                            facingMode: "environment"
                         }
-
-                    }
-
-                });
-
-
-        cameraVideo.srcObject =
-            cameraStream;
-
-
-        // =====================================
-        // 映像サイズが確定するまで待つ
-        // =====================================
-
-        if (
-            cameraVideo.readyState < 1
-        ) {
-
-            await new Promise(
-                function (resolve) {
-
-                    cameraVideo.addEventListener(
-                        "loadedmetadata",
-                        resolve,
-                        {
-                            once: true
-                        }
-                    );
-
-                }
+                    });
+        }
+        catch (cameraError) {
+            console.error(
+                "getUserMediaエラー:",
+                cameraError
             );
-
+            alert(
+                "カメラの取得に失敗しました。\n\n" +
+                "エラー名: " +
+                cameraError.name +
+                "\n\n詳細: " +
+                cameraError.message
+            );
+            cameraModal.classList.add("hidden");
+            return;
         }
 
+        // =====================================
+        // ここまで来たら
+        // カメラ権限取得には成功している
+        // =====================================
+
+        cameraStream = stream;
+        cameraVideo.srcObject = stream;
+        cameraActive = true;
 
         // =====================================
-        // iPhoneで再生開始
+        // video.play()は
+        // カメラ権限とは別問題
+        //
+        // 失敗してもカメラを停止しない
         // =====================================
 
-        await cameraVideo.play();
-
-
+        try { await cameraVideo.play();}
+        catch (playError) {
+            console.warn( "video.play()失敗:", playError);
+            // iPhoneでは後で
+            // 撮影ボタンから再度play()する
+        }
         currentCameraCaptureCount = 0;
-
-
-        cameraCount.textContent =
-            "撮影済み 0枚";
-
-
+        cameraCount.textContent = "撮影済み 0枚";
     }
     catch (error) {
-
-        console.error(
-            "カメラ起動エラー:",
-            error
-        );
-
-
+        console.error("カメラ初期化エラー:", error);
+        alert("カメラ初期化に失敗しました。\n\n" + error.message);
         stopRectiScanCamera();
-
-
-        let message =
-            "カメラを起動できませんでした。";
-
-
-        if (
-            error.name ===
-            "NotAllowedError"
-        ) {
-
-            message +=
-                "\nSafariのカメラ使用を許可してください。";
-
-        }
-
-
-        alert(
-            message
-        );
-
     }
-
+    finally { cameraStarting = false;}
 }
-
 
 // =============================================
 // カメラ終了

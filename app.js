@@ -614,10 +614,6 @@ async function setCameraTorch(
     }
 }
 
-// iPhone Safari対策
-let cameraStarting = false;
-let cameraActive = false;
-
 // =============================================
 // カメラ開始
 // =============================================

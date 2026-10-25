@@ -41,43 +41,6 @@ let isAuthenticated = false;
 // 認証直後のSafariイベント対策
 let lastUnlockTime = 0;
 
-// 初期表示
-function lockRectiScan() {
-    isAuthenticated = false;
-    authPinInput.value = "";
-    authError.textContent = "";
-    const savedPin = localStorage.getItem( RECTISCAN_PIN_KEY);
-    isFirstPinSetup = !savedPin;
-
-    if (isFirstPinSetup) {
-        authMessage.textContent = "初回設定：4〜8桁のPINを設定してください";
-        authButton.textContent = "PINを設定して開始";
-    }
-    else {
-        authMessage.textContent = "PINを入力してください";
-        authButton.textContent = "ロック解除";
-    }
-    authScreen.style.display = "flex";
-}
-function unlockRectiScan() {
-
-    isAuthenticated = true;
-
-    lastUnlockTime =
-        Date.now();
-
-
-    authPinInput.value = "";
-
-    authError.textContent = "";
-
-
-    authScreen.style.display =
-        "none";
-}
-
-lockRectiScan();
-
 // =============================================
 // ロックする
 // =============================================
@@ -128,16 +91,13 @@ function handleAuthButton(event) {
 
     // フォーム送信・ページ再読み込みを防止
     if (event) {
-
         event.preventDefault();
-        event.stopPropagation();
-
     }
 
+    // 認証処理が実際に呼ばれたことを確認
+    authError.textContent = "認証中...";
 
-    const pin =
-        authPinInput.value.trim();
-
+    const pin = authPinInput.value.trim();
 
     // =====================================
     // PIN形式チェック
@@ -249,7 +209,40 @@ function handleAuthButton(event) {
 // ボタンタップ
 // =============================================
 
-authButton.addEventListener("click",handleAuthButton);
+authButton.addEventListener("click", handleAuthButton);
+
+// =============================================
+// iPhone / タッチ端末用補助処理
+//
+// PC版には影響させない
+// =============================================
+let lastMobileAuthTime = 0;
+
+if (
+    window.matchMedia &&
+    window.matchMedia(
+        "(pointer: coarse)"
+    ).matches
+) {
+    authButton.addEventListener(
+        "pointerup",
+        function (event) {
+            const now = Date.now();
+
+            // pointerupの直後にclickも来るため
+            // 二重認証を防止
+            if (
+                now -
+                lastMobileAuthTime <
+                700
+            ) {
+                return;
+            }
+            lastMobileAuthTime = now;
+            handleAuthButton(event);
+        }
+    );
+}
 
 // =============================================
 // iPhoneキーボードの「完了」でも認証

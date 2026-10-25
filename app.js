@@ -79,51 +79,6 @@ function unlockRectiScan() {
 lockRectiScan();
 
 // =============================================
-// RectiScan PIN認証
-// =============================================
-
-const authScreen =
-    document.getElementById(
-        "authScreen"
-    );
-
-const authPinInput =
-    document.getElementById(
-        "authPinInput"
-    );
-
-const authButton =
-    document.getElementById(
-        "authButton"
-    );
-
-const authMessage =
-    document.getElementById(
-        "authMessage"
-    );
-
-const authError =
-    document.getElementById(
-        "authError"
-    );
-
-
-const RECTISCAN_PIN_KEY =
-    "rectiscan_pin";
-
-
-let isFirstPinSetup =
-    !localStorage.getItem(
-        RECTISCAN_PIN_KEY
-    );
-
-
-let isAuthenticated = false;
-
-let lastUnlockTime = 0;
-
-
-// =============================================
 // ロックする
 // =============================================
 function lockRectiScan() {
@@ -294,11 +249,7 @@ function handleAuthButton(event) {
 // ボタンタップ
 // =============================================
 
-authButton.addEventListener(
-    "click",
-    handleAuthButton
-);
-
+authButton.addEventListener("click",handleAuthButton);
 
 // =============================================
 // iPhoneキーボードの「完了」でも認証

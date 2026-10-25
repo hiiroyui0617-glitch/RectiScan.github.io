@@ -34,47 +34,193 @@ const authButton = document.getElementById("authButton");
 const authMessage = document.getElementById("authMessage");
 const authError = document.getElementById("authError");
 const RECTISCAN_PIN_KEY = "rectiscan_pin";
-localStorage.removeItem(RECTISCAN_PIN_KEY);
 
 let isFirstPinSetup = !localStorage.getItem(RECTISCAN_PIN_KEY);
+// 認証状態
+let isAuthenticated = false;
+// 認証直後のSafariイベント対策
+let lastUnlockTime = 0;
 
 // 初期表示
-lockRectiScan();
-
-// =============================================
-// RectiScanをロック状態に戻す
-// =============================================
 function lockRectiScan() {
+    isAuthenticated = false;
     authPinInput.value = "";
     authError.textContent = "";
-
-    // =====================================
-    // 現在PINが設定されているか
-    // 毎回localStorageから確認
-    // =====================================
-
-    const savedPin = localStorage.getItem( RECTISCAN_PIN_KEY );
+    const savedPin = localStorage.getItem( RECTISCAN_PIN_KEY);
     isFirstPinSetup = !savedPin;
-
-    // =====================================
-    // PIN未設定
-    // =====================================
 
     if (isFirstPinSetup) {
         authMessage.textContent = "初回設定：4〜8桁のPINを設定してください";
         authButton.textContent = "PINを設定して開始";
     }
-
-    // =====================================
-    // PIN設定済み
-    // =====================================
-
     else {
         authMessage.textContent = "PINを入力してください";
         authButton.textContent = "ロック解除";
     }
     authScreen.style.display = "flex";
 }
+function unlockRectiScan() {
+
+    isAuthenticated = true;
+
+    lastUnlockTime =
+        Date.now();
+
+
+    authPinInput.value = "";
+
+    authError.textContent = "";
+
+
+    authScreen.style.display =
+        "none";
+}
+
+lockRectiScan();
+
+// =============================================
+// RectiScan PIN認証
+// =============================================
+
+const authScreen =
+    document.getElementById(
+        "authScreen"
+    );
+
+const authPinInput =
+    document.getElementById(
+        "authPinInput"
+    );
+
+const authButton =
+    document.getElementById(
+        "authButton"
+    );
+
+const authMessage =
+    document.getElementById(
+        "authMessage"
+    );
+
+const authError =
+    document.getElementById(
+        "authError"
+    );
+
+
+const RECTISCAN_PIN_KEY =
+    "rectiscan_pin";
+
+
+let isFirstPinSetup =
+    !localStorage.getItem(
+        RECTISCAN_PIN_KEY
+    );
+
+
+let isAuthenticated = false;
+
+let lastUnlockTime = 0;
+
+
+// =============================================
+// ロックする
+// =============================================
+function lockRectiScan() {
+    isAuthenticated = false;
+    authPinInput.value = "";
+    authError.textContent = "";
+    const savedPin = localStorage.getItem(RECTISCAN_PIN_KEY);
+    isFirstPinSetup = !savedPin;
+
+    if (isFirstPinSetup) {
+        authMessage.textContent = "初回設定：4〜8桁のPINを設定してください";
+        authButton.textContent = "PINを設定して開始";
+    }
+    else {
+        authMessage.textContent = "PINを入力してください";
+        authButton.textContent = "ロック解除";
+    }
+    authScreen.style.display = "flex";
+}
+
+// =============================================
+// ロック解除
+// =============================================
+function unlockRectiScan() {
+    isAuthenticated = true;
+    lastUnlockTime = Date.now();
+    authPinInput.value = "";
+    authError.textContent = "";
+    authScreen.style.display = "none";
+}
+
+
+// =============================================
+// 初期表示
+// =============================================
+
+lockRectiScan();
+
+// =============================================
+// PIN設定 / ロック解除ボタン
+// =============================================
+
+authButton.addEventListener(
+    "click",
+    function () {
+        const pin = authPinInput.value.trim();
+
+        if ( !/^\d{4,8}$/.test(pin) ) {
+            authError.textContent = "4〜8桁の数字を入力してください。";
+            return;
+        }
+
+        // =====================================
+        // 初回PIN設定
+        // =====================================
+
+        if (isFirstPinSetup) {
+            try {
+                localStorage.setItem(
+                    RECTISCAN_PIN_KEY,
+                    pin
+                );
+            }
+            catch (error) {
+                console.error(
+                    "PIN保存エラー:",
+                    error
+                );
+                authError.textContent = "PINを保存できませんでした。";
+                return;
+            }
+            const savedPin = localStorage.getItem(RECTISCAN_PIN_KEY);
+
+            if (savedPin !== pin) {
+                authError.textContent = "PINの保存に失敗しました。";
+                return;
+            }
+            isFirstPinSetup = false;
+            unlockRectiScan();
+            return;
+        }
+
+        // =====================================
+        // 通常のロック解除
+        // =====================================
+
+        const savedPin = localStorage.getItem(RECTISCAN_PIN_KEY);
+
+        if (pin === savedPin) {
+            unlockRectiScan();
+        }
+        else {
+            authError.textContent = "PINが違います。";
+            authPinInput.value = "";
+        }
+    }
+);
 
 // =============================================
 // ページ情報
@@ -408,14 +554,42 @@ function stopRectiScanCamera() {
 document.addEventListener(
     "visibilitychange",
     function () {
-        if (document.visibilityState === "hidden"){
-            // カメラ使用中なら停止
-            if (cameraStream) {
-                stopRectiScanCamera();
-            }
-            // RectiScanをロック
-            lockRectiScan();
+        if (
+            document.visibilityState !==
+            "hidden"
+        ) {
+            return;
         }
+        // =====================================
+        // PIN画面の段階なら何もしない
+        // =====================================
+        if (!isAuthenticated) {
+            return;
+        }
+
+        // =====================================
+        // 認証直後2秒間は無視
+        //
+        // iPhone Safariの
+        // キーボード/UI状態変化対策
+        // =====================================
+        if (
+            Date.now() -
+            lastUnlockTime <
+            2000
+        ) {
+            return;
+        }
+        // =====================================
+        // カメラ起動処理中も無視
+        // =====================================
+        if (cameraStarting) {
+            return;
+        }
+        if (cameraStream) {
+            stopRectiScanCamera();
+        }
+        lockRectiScan();
     }
 );
 
@@ -426,9 +600,18 @@ document.addEventListener(
 window.addEventListener(
     "pageshow",
     function (event) {
-        if (event.persisted) {
+
+        // Safariの履歴キャッシュから
+        // 復元された場合だけロック
+        if (
+            event.persisted &&
+            isAuthenticated
+        ) {
+
             lockRectiScan();
+
         }
+
     }
 );
 

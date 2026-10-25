@@ -45,6 +45,7 @@ let lastUnlockTime = 0;
 // ロックする
 // =============================================
 function lockRectiScan() {
+    document.body.classList.add("auth-locked");
     isAuthenticated = false;
     authPinInput.value = "";
     authError.textContent = "";
@@ -71,6 +72,7 @@ function unlockRectiScan() {
     authPinInput.value = "";
     authError.textContent = "";
     authScreen.style.display = "none";
+    document.body.classList.remove("auth-locked");
 }
 
 

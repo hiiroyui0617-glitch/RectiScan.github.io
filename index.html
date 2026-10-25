@@ -7,131 +7,10 @@
     <title>RectiScan</title>
 
     <link rel="stylesheet"
-          href="./style.css?v=20261025-7">
-
-    <!--
-        認証画面だけは外部CSSが読み込めなくても
-        必ず全画面表示させる
-    -->
-    <!--
-    <style>
-
-        html,
-        body {
-            min-height: 100%;
-        }
-
-            body.auth-locked {
-                overflow: hidden !important;
-            }
-
-                /* ロック中は認証画面以外を見せない */
-                body.auth-locked > :not(#authScreen) {
-                    visibility: hidden !important;
-                }
-
-        #authScreen {
-            position: fixed !important;
-            top: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100vh !important;
-            min-height: 100dvh !important;
-            z-index: 2147483647 !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: radial-gradient( circle at top, #123824, #08120e 55%, #030706 );
-        }
-
-            #authScreen .auth-card {
-                width: 100%;
-                max-width: 360px;
-                padding: 32px;
-                border-radius: 20px;
-                background: rgba(17, 25, 22, 0.96);
-                border: 1px solid rgba(75, 255, 131, 0.25);
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-                text-align: center;
-                color: white;
-            }
-
-                #authScreen .auth-card h1 {
-                    margin-top: 0;
-                    color: #50ed7b;
-                }
-
-                #authScreen .auth-card input {
-                    display: block;
-                    width: 100%;
-                    margin: 18px 0;
-                    padding: 15px;
-                    border-radius: 10px;
-                    border: 1px solid #43534a;
-                    background: #0a110d;
-                    color: white;
-                    font-size: 20px;
-                    text-align: center;
-                    -webkit-appearance: none;
-                    appearance: none;
-                }
-
-                #authScreen .auth-card button {
-                    display: block;
-                    width: 100%;
-                    padding: 14px;
-                    border: none;
-                    border-radius: 10px;
-                    background: #49e879;
-                    color: #07130b;
-                    font-size: 16px;
-                    font-weight: bold;
-                    -webkit-appearance: none;
-                    appearance: none;
-                }
-    </style>
-    -->
+          href="./style.css?v=20261025-11">
 </head>
 
 <body>
-
-    <!-- =========================
-     RectiScan 起動ロック
-     ========================= -->
-    <!--
-    <div id="authScreen"
-         class="auth-screen"
-         style="display:none !important;">
-
-        <div class="auth-card">
-
-            <h1>RectiScan</h1>
-
-            <p id="authMessage">
-                PINを入力してください
-            </p>
-
-            <input id="authPinInput"
-                   type="password"
-                   inputmode="numeric"
-                   maxlength="8"
-                   placeholder="PIN">
-
-            <button id="authButton"
-                    type="button">
-                ロック解除
-            </button>
-
-            <p id="authError"
-               class="auth-error"></p>
-
-        </div>
-
-    </div>
-    -->
 
     <header class="app-header">
 
@@ -490,7 +369,7 @@
     <canvas id="cameraCaptureCanvas"
             style="display:none;"></canvas>
 
-    <script src="./app.js?v=20261025-7"></script>
+    <script src="./app.js?v=20261025-11"></script>
 
 </body>
 </html>

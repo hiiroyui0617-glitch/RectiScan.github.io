@@ -50,67 +50,6 @@ body {
 }
 
 /* =========================
-   起動認証
-   ========================= */
-
-.auth-screen {
-    position: fixed;
-    inset: 0;
-    z-index: 20000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: radial-gradient( circle at top, #123824, #08120e 55%, #030706 );
-}
-
-.auth-card {
-    width: 100%;
-    max-width: 360px;
-    padding: 32px;
-    border-radius: 20px;
-    background: rgba( 17, 25, 22, 0.92 );
-    border: 1px solid rgba( 75, 255, 131, 0.25 );
-    box-shadow: 0 20px 60px rgba( 0, 0, 0, 0.45 );
-    text-align: center;
-    color: white;
-}
-
-    .auth-card h1 {
-        margin-top: 0;
-        color: #50ed7b;
-    }
-
-    .auth-card input {
-        width: 100%;
-        box-sizing: border-box;
-        margin: 18px 0;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #43534a;
-        background: #0a110d;
-        color: white;
-        font-size: 20px;
-        text-align: center;
-    }
-
-    .auth-card button {
-        width: 100%;
-        padding: 14px;
-        border: none;
-        border-radius: 10px;
-        background: #49e879;
-        color: #07130b;
-        font-weight: bold;
-        font-size: 16px;
-    }
-
-.auth-error {
-    min-height: 20px;
-    color: #ff7777;
-}
-
-/* =========================
    メイン
    ========================= */
 

@@ -24,250 +24,6 @@ const resetCropButton = document.getElementById("resetCropButton");
 const cancelCropButton =document.getElementById("cancelCropButton");
 const applyCropButton = document.getElementById("applyCropButton");
 
-// =============================================
-// RectiScan PIN認証
-// =============================================
-
-/* 
-const authScreen = document.getElementById("authScreen");
-const authPinInput = document.getElementById("authPinInput");
-const authButton = document.getElementById("authButton");
-const authMessage = document.getElementById("authMessage");
-const authError = document.getElementById("authError");
-const RECTISCAN_PIN_KEY = "rectiscan_pin";
-
-let isFirstPinSetup = !localStorage.getItem(RECTISCAN_PIN_KEY);
-// 認証状態
-let isAuthenticated = false;
-// 認証直後のSafariイベント対策
-let lastUnlockTime = 0;
-
-// =============================================
-// ロックする
-// =============================================
-function lockRectiScan() {
-    document.body.classList.add("auth-locked");
-    isAuthenticated = false;
-    authPinInput.value = "";
-    authError.textContent = "";
-    const savedPin = localStorage.getItem(RECTISCAN_PIN_KEY);
-    isFirstPinSetup = !savedPin;
-
-    if (isFirstPinSetup) {
-        authMessage.textContent = "初回設定：4〜8桁のPINを設定してください";
-        authButton.textContent = "PINを設定して開始";
-    }
-    else {
-        authMessage.textContent = "PINを入力してください";
-        authButton.textContent = "ロック解除";
-    }
-    authScreen.style.display = "flex";
-}
-
-// =============================================
-// ロック解除
-// =============================================
-function unlockRectiScan() {
-    isAuthenticated = true;
-    lastUnlockTime = Date.now();
-    authPinInput.value = "";
-    authError.textContent = "";
-    authScreen.style.display = "none";
-    document.body.classList.remove("auth-locked");
-}
-
-
-// =============================================
-// 初期表示
-// =============================================
-
-//lockRectiScan();
-
-// =============================================
-// PIN設定 / ロック解除
-// =============================================
-
-// iPhone Safariでフォーム送信扱いにならないよう強制
-authButton.type = "button";
-
-function handleAuthButton(event) {
-
-    // フォーム送信・ページ再読み込みを防止
-    if (event) {
-        event.preventDefault();
-    }
-
-    // 認証処理が実際に呼ばれたことを確認
-    authError.textContent = "認証中...";
-
-    const pin = authPinInput.value.trim();
-
-    // =====================================
-    // PIN形式チェック
-    // =====================================
-
-    if (
-        !/^\d{4,8}$/.test(pin)
-    ) {
-
-        authError.textContent =
-            "4〜8桁の数字を入力してください。";
-
-        return;
-    }
-
-
-    // =====================================
-    // 初回PIN設定
-    // =====================================
-
-    if (isFirstPinSetup) {
-
-        try {
-
-            localStorage.setItem(
-                RECTISCAN_PIN_KEY,
-                pin
-            );
-
-        }
-        catch (error) {
-
-            console.error(
-                "PIN保存エラー:",
-                error
-            );
-
-            authError.textContent =
-                "PINを保存できませんでした。";
-
-            return;
-        }
-
-
-        // 保存確認
-        const savedPin =
-            localStorage.getItem(
-                RECTISCAN_PIN_KEY
-            );
-
-
-        if (
-            savedPin !== pin
-        ) {
-
-            authError.textContent =
-                "PINの保存に失敗しました。";
-
-            return;
-        }
-
-
-        isFirstPinSetup =
-            false;
-
-
-        // =================================
-        // 認証成功
-        // =================================
-
-        unlockRectiScan();
-
-
-        return;
-    }
-
-
-    // =====================================
-    // 通常のロック解除
-    // =====================================
-
-    const savedPin =
-        localStorage.getItem(
-            RECTISCAN_PIN_KEY
-        );
-
-
-    if (
-        pin === savedPin
-    ) {
-
-        unlockRectiScan();
-
-    }
-    else {
-
-        authError.textContent =
-            "PINが違います。";
-
-        authPinInput.value =
-            "";
-
-    }
-
-}
-
-
-// =============================================
-// ボタンタップ
-// =============================================
-
-authButton.addEventListener("click", handleAuthButton);
-
-// =============================================
-// iPhone / タッチ端末用補助処理
-//
-// PC版には影響させない
-// =============================================
-let lastMobileAuthTime = 0;
-
-if (
-    window.matchMedia &&
-    window.matchMedia(
-        "(pointer: coarse)"
-    ).matches
-) {
-    authButton.addEventListener(
-        "pointerup",
-        function (event) {
-            const now = Date.now();
-
-            // pointerupの直後にclickも来るため
-            // 二重認証を防止
-            if (
-                now -
-                lastMobileAuthTime <
-                700
-            ) {
-                return;
-            }
-            lastMobileAuthTime = now;
-            handleAuthButton(event);
-        }
-    );
-}
-
-// =============================================
-// iPhoneキーボードの「完了」でも認証
-// =============================================
-
-authPinInput.addEventListener(
-    "keydown",
-    function (event) {
-
-        if (
-            event.key === "Enter"
-        ) {
-
-            handleAuthButton(
-                event
-            );
-
-        }
-
-    }
-);
-*/
 
 // =============================================
 // ページ情報
@@ -609,43 +365,53 @@ function setupTorchControl() {
 // ライトON / OFF
 // =============================================
 
-async function setCameraTorch(
-    enabled
-) {
+async function setCameraTorch(enabled) {
+
     if (!cameraStream) {
         return;
     }
 
-    const track = cameraStream.getVideoTracks()[0];
+    const tracks = cameraStream.getVideoTracks();
 
-    if (!track || tracks.length === 0) {
+    if (!tracks || tracks.length === 0) {
         return;
     }
 
     const track = tracks[0];
 
     if (typeof track.applyConstraints !== "function") {
+        torchSupported = false;
+        torchEnabled = false;
         torchButton.textContent = "ライト非対応";
         torchButton.disabled = true;
         return;
     }
 
-    try { 
-        // =====================================
-        // 標準的なtorch制約
-        // =====================================
-
+    try {
+        // iPhone Safari / WebKitではadvanced形式を先に試す。
         try {
             await track.applyConstraints({
-                torch: enabled});
+                advanced: [
+                    {
+                        torch: enabled
+                    }
+                ]
+            });
         }
         catch (advancedError) {
-            // 一部ブラウザ用フォールバック
-            console.warn("advanced torch失敗:", advanceError);
-            await track.applyConstraints({ torch: enabled });
+            console.warn(
+                "advanced形式のライト切替に失敗。通常形式を試します:",
+                advancedError
+            );
+
+            await track.applyConstraints({
+                torch: enabled
+            });
         }
+
         torchSupported = true;
         torchEnabled = enabled;
+        torchButton.disabled = false;
 
         if (torchEnabled) {
             torchButton.textContent = "ライト ON";
@@ -653,25 +419,30 @@ async function setCameraTorch(
         }
         else {
             torchButton.textContent = "ライト OFF";
-            torchButton.classList.remove( "active" );
+            torchButton.classList.remove("active");
         }
+
         try {
-            console.log("Torch settings:", track.getSettings());
+            if (typeof track.getSettings === "function") {
+                console.log("Torch settings:", track.getSettings());
+            }
         }
-        catch (error) { }
+        catch (settingsError) {
+            console.warn("Torch設定確認:", settingsError);
+        }
     }
-
     catch (error) {
-        console.error(
-            "ライト切替エラー:",
-            error
-        );
-
-        alert("この端末ではカメラライトを制御できません。");
+        console.error("ライト切替エラー:", error);
 
         torchSupported = false;
         torchEnabled = false;
-        torchButton.classList.add("hidden");
+        torchButton.textContent = "ライト非対応";
+        torchButton.classList.remove("active");
+        torchButton.disabled = true;
+
+        alert(
+            "現在選択されているカメラではライトを使用できません。"
+        );
     }
 }
 
@@ -763,7 +534,15 @@ async function startRectiScanCamera() {
                     .getUserMedia({
                         audio: false,
                         video: {
-                            facingMode: "environment"
+                            facingMode: {
+                                ideal: "environment"
+                            },
+                            width: {
+                                ideal: 1920
+                            },
+                            height: {
+                                ideal: 1080
+                            }
                         }
                     });
         }
@@ -846,71 +625,26 @@ function stopRectiScanCamera() {
 }
 
 // =============================================
-// iPhone / Safari
-// アプリを離れたらロック
+// スマホ / Safari
+// ページを離れたらカメラだけ停止
 // =============================================
 
 document.addEventListener(
     "visibilitychange",
     function () {
-        if (
-            document.visibilityState !==
-            "hidden"
-        ) {
-            return;
-        }
-        // =====================================
-        // PIN画面の段階なら何もしない
-        // =====================================
-        if (!isAuthenticated) {
+
+        if (document.visibilityState !== "hidden") {
             return;
         }
 
-        // =====================================
-        // 認証直後2秒間は無視
-        //
-        // iPhone Safariの
-        // キーボード/UI状態変化対策
-        // =====================================
-        if (
-            Date.now() -
-            lastUnlockTime <
-            2000
-        ) {
-            return;
-        }
-        // =====================================
-        // カメラ起動処理中も無視
-        // =====================================
+        // カメラ起動処理中の一時的な状態変化は無視する。
         if (cameraStarting) {
             return;
         }
+
         if (cameraStream) {
             stopRectiScanCamera();
         }
-        lockRectiScan();
-    }
-);
-
-// =============================================
-// Safariのページ復元時にも再ロック
-// =============================================
-
-window.addEventListener(
-    "pageshow",
-    function (event) {
-
-        // Safariの履歴キャッシュから
-        // 復元された場合だけロック
-        if (
-            event.persisted &&
-            isAuthenticated
-        ) {
-
-            lockRectiScan();
-
-        }
-
     }
 );
 
